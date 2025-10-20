@@ -254,6 +254,7 @@ runs:
 
     - name: Extract Bundles 📦
       if: ${{ inputs.UPLOAD_FILES && inputs.OUTPUT_DIST_DIR != '' && inputs.NEXT_STATIC_PATH != '' }}
+      shell: bash
       run: |
         mkdir -p ${{ inputs.OUTPUT_DIST_DIR }}
         if [ -z "${{ inputs.workspace-app }}" ]; then
