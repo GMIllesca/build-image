@@ -265,6 +265,13 @@ runs:
           docker cp $(docker create --rm ${{ steps.prepare-tag.outputs.IMAGE_CURRENT_COMMIT }}):/app/${{ inputs.project-path }}/apps/${{ inputs.workspace-app }}/.${{ inputs.NEXT_STATIC_PATH }}/ ${{ inputs.OUTPUT_DIST_DIR }}/
         fi
 
+    - name: Upload Extracted Bundles 📤
+      if: ${{ inputs.UPLOAD_FILES && inputs.OUTPUT_DIST_DIR != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: static-bundle
+        path: ${{ inputs.OUTPUT_DIST_DIR }}
+
     - name: Logout of Amazon ECR 🚪
       shell: bash
       if: always()
