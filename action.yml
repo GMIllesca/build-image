@@ -189,29 +189,26 @@ runs:
         echo "app_env=${APP_ENV}" >> $GITHUB_OUTPUT
 
     - name: Update package.json version
-        if: ${{ inputs.VERSION != '' }}
-        shell: bash
-        run: |
-          # Update version in ALL workspace package.json files
-          for pkg in ./apps/*/package.json; do
-            if [ -f "$pkg" ]; then
-              echo "Updating $pkg with version ${{ inputs.VERSION }}"
-              jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$pkg" > tmp.$$.json && mv tmp.$$.json "$pkg"
-            fi
-          done
-          # Also update root package.json if exists
-          if [ -f "package.json" ]; then
-            echo "Updating root package.json with version ${{ inputs.VERSION }}"
-            jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
-          fi
-    
-    - name: Regenerate lockfile after version update (workspaces only)
-      if: ${{ inputs.VERSION != ''}}
+      if: ${{ inputs.VERSION != '' }}
       shell: bash
       run: |
-        # Check if it's a Yarn workspace monorepo
+        for pkg in ./apps/*/package.json; do
+          if [ -f "$pkg" ]; then
+            echo "Updating $pkg with version ${{ inputs.VERSION }}"
+            jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$pkg" > tmp.$$.json && mv tmp.$$.json "$pkg"
+          fi
+        done
+        if [ -f "package.json" ]; then
+          echo "Updating root package.json with version ${{ inputs.VERSION }}"
+          jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
+        fi
+
+    - name: Regenerate lockfile after version update
+      if: ${{ inputs.VERSION != '' }}
+      shell: bash
+      run: |
         if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
-          echo "📦 Detected Yarn workspace monorepo, regenerating yarn.lock..."
+          echo "📦 Yarn workspace detected, regenerating lockfile..."
           yarn install --no-frozen-lockfile
         fi
         
