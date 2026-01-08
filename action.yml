@@ -198,7 +198,16 @@ runs:
           jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' $PACKAGE_JSON_PATH > tmp.$$.json && mv tmp.$$.json $PACKAGE_JSON_PATH
           cat $PACKAGE_JSON_PATH
         fi
-
+    - name: Regenerate lockfile after version update (workspaces only)
+      if: ${{ inputs.VERSION != ''}}
+      shell: bash
+      run: |
+        # Check if it's a Yarn workspace monorepo
+        if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
+          echo "📦 Detected Yarn workspace monorepo, regenerating yarn.lock..."
+          yarn install --no-frozen-lockfile
+        fi
+        
     # - name: Docs change domain TOCTOC
     #   shell: bash
     #   if: ${{ endsWith(inputs.project-name, '-docs') }}
