@@ -189,15 +189,22 @@ runs:
         echo "app_env=${APP_ENV}" >> $GITHUB_OUTPUT
 
     - name: Update package.json version
-      if: ${{ inputs.VERSION != ''}}
-      shell: bash
-      run: |
-        PACKAGE_JSON_PATH="./apps/${{ inputs.workspace-app }}/package.json"
-        if [ -f $PACKAGE_JSON_PATH ]; then
-          echo "Updating $PACKAGE_JSON_PATH with version ${{ inputs.VERSION }}"
-          jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' $PACKAGE_JSON_PATH > tmp.$$.json && mv tmp.$$.json $PACKAGE_JSON_PATH
-          cat $PACKAGE_JSON_PATH
-        fi
+        if: ${{ inputs.VERSION != '' }}
+        shell: bash
+        run: |
+          # Update version in ALL workspace package.json files
+          for pkg in ./apps/*/package.json; do
+            if [ -f "$pkg" ]; then
+              echo "Updating $pkg with version ${{ inputs.VERSION }}"
+              jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$pkg" > tmp.$$.json && mv tmp.$$.json "$pkg"
+            fi
+          done
+          # Also update root package.json if exists
+          if [ -f "package.json" ]; then
+            echo "Updating root package.json with version ${{ inputs.VERSION }}"
+            jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
+          fi
+    
     - name: Regenerate lockfile after version update (workspaces only)
       if: ${{ inputs.VERSION != ''}}
       shell: bash
