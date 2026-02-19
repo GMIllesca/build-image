@@ -188,25 +188,25 @@ runs:
         echo "node_env=${NODE_ENV}" >> $GITHUB_OUTPUT
         echo "app_env=${APP_ENV}" >> $GITHUB_OUTPUT
 
-    - name: Update package.json version
-      if: ${{ inputs.VERSION != '' }}
-      shell: bash
-      run: |
-        # Only update root package.json for Yarn workspaces
-        # Workspaces are private and don't need version updates
-        if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
-          echo "📦 Yarn workspace detected, only updating root package.json"
-          if [ -f "package.json" ]; then
-            jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
-          fi
-        else
-          # For non-workspace projects, update normally
-          PACKAGE_JSON_PATH="./apps/${{ inputs.workspace-app }}/package.json"
-          if [ -f "$PACKAGE_JSON_PATH" ]; then
-            echo "Updating $PACKAGE_JSON_PATH with version ${{ inputs.VERSION }}"
-            jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$PACKAGE_JSON_PATH" > tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON_PATH"
-          fi
-        fi
+    # - name: Update package.json version
+#       if: ${{ inputs.VERSION != '' }}
+#       shell: bash
+#       run: |
+#         # Only update root package.json for Yarn workspaces
+#         # Workspaces are private and don't need version updates
+#         if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
+#           echo "📦 Yarn workspace detected, only updating root package.json"
+#           if [ -f "package.json" ]; then
+#             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
+#           fi
+#         else
+#           # For non-workspace projects, update normally
+#           PACKAGE_JSON_PATH="./apps/${{ inputs.workspace-app }}/package.json"
+#           if [ -f "$PACKAGE_JSON_PATH" ]; then
+#             echo "Updating $PACKAGE_JSON_PATH with version ${{ inputs.VERSION }}"
+#             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$PACKAGE_JSON_PATH" > tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON_PATH"
+#           fi
+#         fi
         
     # - name: Docs change domain TOCTOC
     #   shell: bash
