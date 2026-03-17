@@ -1,106 +1,106 @@
-name: 'Build Docker Image'
-description: 'Builds and pushes Docker images to Amazon ECR.'
+name: "Build Docker Image"
+description: "Builds and pushes Docker images to Amazon ECR."
 branding:
-  icon: 'package'
-  color: 'blue'
+  icon: "package"
+  color: "blue"
 
 inputs:
   domain:
-    description: 'Domain for docs'
-    default: ''
+    description: "Domain for docs"
+    default: ""
     required: false
     type: string
   aws-default-region:
-    description: 'AWS default region'
+    description: "AWS default region"
     required: true
     type: string
   image-target:
-    description: 'Docker image target'
+    description: "Docker image target"
     required: true
     type: string
   project-path:
-    description: 'Project path'
+    description: "Project path"
     required: false
-    default: '.'
+    default: "."
     type: string
   project-name:
-    description: 'Project name for the Docker image'
+    description: "Project name for the Docker image"
     required: true
     type: string
   workspace-app:
-    description: 'Workspace app path'
+    description: "Workspace app path"
     required: true
     type: string
   docker-file:
-    description: 'Path to Dockerfile'
+    description: "Path to Dockerfile"
     required: false
-    default: 'dockerfile'
+    default: "dockerfile"
     type: string
   env-file:
-    description: 'Path to environment file'
+    description: "Path to environment file"
     required: false
-    default: '.env.development'
+    default: ".env.development"
     type: string
   push-image:
-    description: 'Whether to push the image to ECR'
+    description: "Whether to push the image to ECR"
     required: false
     default: false
     type: boolean
   OUTPUT_DIST_DIR:
-    description: 'output files'
+    description: "output files"
     required: false
-    default: 'out'
+    default: "out"
     type: string
   NEXT_STATIC_PATH:
-    description: 'next js static path'
+    description: "next js static path"
     required: false
-    default: 'next/static'
+    default: "next/static"
     type: boolean
   UPLOAD_FILES:
-    description: 'Defines if output files will be uploaded to s3'
+    description: "Defines if output files will be uploaded to s3"
     required: false
     default: false
     type: boolean
   image-env:
-    description: 'Environment for the image'
+    description: "Environment for the image"
     required: false
-    default: 'development'
+    default: "development"
     type: string
   AWS_ACCOUNT_ID:
-    description: 'AWS Account ID'
+    description: "AWS Account ID"
     required: true
   AWS_ACCESS_KEY_ID:
-    description: 'AWS Access Key ID'
+    description: "AWS Access Key ID"
     required: true
   AWS_SECRET_ACCESS_KEY:
-    description: 'AWS Secret Access Key'
+    description: "AWS Secret Access Key"
     required: true
   ENVIROMENT:
-    description: 'Environment variable'
+    description: "Environment variable"
     required: false
   VERSION:
-    description: 'Version variable'
+    description: "Version variable"
     required: false
   build-context:
-    description: 'Build context: test, development, or production'
+    description: "Build context: test, development, or production"
     required: true
     type: string
   branch:
-    description: 'branch to checkout'
+    description: "branch to checkout"
     required: false
-    default: 'main'
+    default: "main"
     type: string
   aws-namespace:
-    description: 'AWS ECR namespace'
+    description: "AWS ECR namespace"
     required: false
     type: string
   platforms:
-    description: 'Platforms to build for (e.g., linux/amd64,linux/arm64)'
+    description: "Platforms to build for (e.g., linux/amd64,linux/arm64)"
     required: false
     type: string
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Checkout 🛎️
       uses: actions/checkout@v2
@@ -122,6 +122,7 @@ runs:
     #   if: ${{ inputs.VERSION == '' || inputs.VERSION == null }}
 
     - name: Configure AWS credentials 🏁
+      if: ${{ inputs.push-image == 'true' }}
       uses: aws-actions/configure-aws-credentials@v1-node16
       with:
         aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
@@ -138,10 +139,14 @@ runs:
       shell: bash
       run: |
         TAG=$(echo $GITHUB_SHA)
-        if [ -n "${{ inputs.aws-namespace }}" ]; then
-          CONTAINER_REPOSITORY="${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-default-region }}.amazonaws.com/${{ inputs.aws-namespace }}/${{ inputs.project-name }}"
+        if [ "${{ inputs.push-image }}" = "true" ]; then
+          if [ -n "${{ inputs.aws-namespace }}" ]; then
+            CONTAINER_REPOSITORY="${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-default-region }}.amazonaws.com/${{ inputs.aws-namespace }}/${{ inputs.project-name }}"
+          else
+            CONTAINER_REPOSITORY="${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-default-region }}.amazonaws.com/${{ inputs.project-name }}"
+          fi
         else
-          CONTAINER_REPOSITORY="${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.aws-default-region }}.amazonaws.com/${{ inputs.project-name }}"
+          CONTAINER_REPOSITORY="${{ inputs.project-name }}"
         fi
         if [ -n "${{ inputs.VERSION }}" ]; then
           IMAGE_TAG="${{ inputs.VERSION }}_"
@@ -189,25 +194,25 @@ runs:
         echo "app_env=${APP_ENV}" >> $GITHUB_OUTPUT
 
     # - name: Update package.json version
-#       if: ${{ inputs.VERSION != '' }}
-#       shell: bash
-#       run: |
-#         # Only update root package.json for Yarn workspaces
-#         # Workspaces are private and don't need version updates
-#         if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
-#           echo "📦 Yarn workspace detected, only updating root package.json"
-#           if [ -f "package.json" ]; then
-#             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
-#           fi
-#         else
-#           # For non-workspace projects, update normally
-#           PACKAGE_JSON_PATH="./apps/${{ inputs.workspace-app }}/package.json"
-#           if [ -f "$PACKAGE_JSON_PATH" ]; then
-#             echo "Updating $PACKAGE_JSON_PATH with version ${{ inputs.VERSION }}"
-#             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$PACKAGE_JSON_PATH" > tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON_PATH"
-#           fi
-#         fi
-        
+    #       if: ${{ inputs.VERSION != '' }}
+    #       shell: bash
+    #       run: |
+    #         # Only update root package.json for Yarn workspaces
+    #         # Workspaces are private and don't need version updates
+    #         if [ -f "yarn.lock" ] && grep -q '"workspaces"' package.json; then
+    #           echo "📦 Yarn workspace detected, only updating root package.json"
+    #           if [ -f "package.json" ]; then
+    #             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' package.json > tmp.$$.json && mv tmp.$$.json package.json
+    #           fi
+    #         else
+    #           # For non-workspace projects, update normally
+    #           PACKAGE_JSON_PATH="./apps/${{ inputs.workspace-app }}/package.json"
+    #           if [ -f "$PACKAGE_JSON_PATH" ]; then
+    #             echo "Updating $PACKAGE_JSON_PATH with version ${{ inputs.VERSION }}"
+    #             jq --arg new_version "${{ inputs.VERSION }}" '.version = $new_version' "$PACKAGE_JSON_PATH" > tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON_PATH"
+    #           fi
+    #         fi
+
     # - name: Docs change domain TOCTOC
     #   shell: bash
     #   if: ${{ endsWith(inputs.project-name, '-docs') }}
@@ -284,5 +289,5 @@ runs:
 
     - name: Logout of Amazon ECR 🚪
       shell: bash
-      if: always()
+      if: ${{ inputs.push-image == 'true' }}
       run: docker logout ${{ steps.login-ecr.outputs.registry }}
