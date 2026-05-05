@@ -69,12 +69,6 @@ inputs:
   AWS_ACCOUNT_ID:
     description: "AWS Account ID"
     required: true
-  AWS_ACCESS_KEY_ID:
-    description: "AWS Access Key ID"
-    required: true
-  AWS_SECRET_ACCESS_KEY:
-    description: "AWS Secret Access Key"
-    required: true
   ENVIROMENT:
     description: "Environment variable"
     required: false
