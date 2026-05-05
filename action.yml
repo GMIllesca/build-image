@@ -122,18 +122,17 @@ runs:
     #   uses: actions/checkout@master
     #   if: ${{ inputs.VERSION == '' || inputs.VERSION == null }}
 
-    - name: Configure AWS credentials 🏁
+    - name: Configure AWS credentials with role 🏁
       if: ${{ fromJSON(inputs.push-image) }}
-      uses: aws-actions/configure-aws-credentials@v1-node16
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+        role-to-assume: arn:aws:iam::${{ inputs.AWS_ACCOUNT_ID }}:role/github-actions-role
         aws-region: ${{ inputs.aws-default-region }}
 
     - name: Login to Amazon ECR 🔑
       if: ${{ fromJSON(inputs.push-image) }}
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Prepare Tags 🏷
       id: prepare-tag
